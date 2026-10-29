@@ -8,7 +8,7 @@ A modern smart learning platform for Electronics and Telecommunication Engineeri
 - Login and registration using Supabase Auth when configured; development-only demo access otherwise
 - Interactive ENTC learning modules
 - Virtual electronics lab with Ohm’s law, logic gates, LED circuit, and streetlight simulators
-- Rule-based AI learning assistant examples (no live model or AI backend is configured)
+- Rule-based AI learning assistant examples (no live model service is configured)
 - Arduino coding challenges with safe rule-based validation
 - Quiz Zone with 10-question random and daily challenges, post-submission answer review, and skill/topic feedback
 - CHAKRAVYUH mission track with XP, credits, stars, levels, achievements, and cosmetic unlocks
@@ -16,6 +16,7 @@ A modern smart learning platform for Electronics and Telecommunication Engineeri
 - Books Library with search, subject/author/semester/difficulty filters, details, official publisher websites, bookmarks, and reading status
 - Video Learning Hub with ENTC subject paths, YouTube playlist embeds/search, Watch Later, and student-confirmed lesson steps
 - Components & Prices catalogue with project templates, Circuit Lab import, BOM estimates, budget checks, CSV export, and print
+- Express API with a MongoDB Atlas connection health check
 - Quiz Zone with 10-question random, daily, subject, topic, Arduino, troubleshooting, and learning-skills practice; answer review and skill feedback
 
 ## Getting started
@@ -26,16 +27,22 @@ A modern smart learning platform for Electronics and Telecommunication Engineeri
 npm install
 ```
 
-2. Copy the environment template and add your Supabase credentials if available:
+2. Copy the environment template and add your local configuration:
 
-```bash
-cp .env.example .env
+```powershell
+Copy-Item .env.example .env
 ```
 
-3. Start the development server:
+3. Start the frontend in one terminal:
 
 ```bash
 npm run dev
+```
+
+4. Start the API server in a second terminal:
+
+```bash
+npm run server
 ```
 
 ## Environment variables
@@ -45,9 +52,23 @@ The app checks for the following variables:
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
+MONGODB_URI=mongodb+srv://<db_username>:<db_password>@<cluster-host>/<database>?retryWrites=true&w=majority
+MONGODB_DB=chakravyuh
+PORT=3001
+HOST=127.0.0.1
+CLIENT_ORIGIN=http://localhost:5173
+VITE_API_BASE_URL=http://127.0.0.1:3001/api
 ```
 
-The Supabase anon key is a public client key; database access must be protected by server-side policies. Never put a private AI-provider key in a `VITE_` variable. No secure AI backend is included. When Supabase credentials are missing, the app uses development-only demo authentication and clearly labelled educational examples.
+`MONGODB_URI` is read only by the Node API and must never be given a `VITE_` prefix. Put the Atlas connection string in the ignored local `.env`, not in source control or chat. In Atlas, create a database user, allow the development machine's IP in Network Access, select **Connect → Drivers → Node.js**, replace the placeholders, and percent-encode special characters in the username/password. The Atlas URI does not need to be provided to the frontend. `VITE_API_BASE_URL` is the public API origin used only for the frontend's health display. `CLIENT_ORIGIN` is a comma-separated allowlist of browser origins if using a non-default host or port.
+
+The backend is a small Express 5 API using the official MongoDB Node.js driver. It exposes `GET /api/health` for server readiness and `GET /api/health/db` to ping the configured database. The health endpoint performs no collection writes or schema changes; it returns HTTP 503 with a generic message when `MONGODB_URI`, Atlas access, or the database connection is unavailable. The dashboard checks database status every 30 seconds. To verify manually, open `http://127.0.0.1:3001/api/health/db`; a successful response reports `"status":"ok"` and `"database":"connected"`. A disconnected response means the connection has not been verified. This health-only backend does not yet move existing app data or authentication from Supabase/local storage into MongoDB.
+
+The Supabase anon key is a public client key; database access must be protected by server-side policies. Never put a private AI-provider key in a `VITE_` variable. When Supabase credentials are missing, the app uses development-only demo authentication and clearly labelled educational examples.
+
+### Credential safety
+
+The Atlas onboarding values previously present in the environment example were replaced with placeholders. Rotate the corresponding Atlas database user's password and update only the local `.env` before connecting. `.env` and other environment variants are ignored by Git; `.env.example` contains placeholders only.
 
 ## CHAKRAVYUH simulator and game progress
 
